@@ -26,11 +26,13 @@ from qiskit.circuit import (
 )
 from qiskit.circuit.parametertable import ParameterReferences
 from qiskit.circuit.library import standard_gates as _std
+from qiskit.transpiler import Layout
+from qiskit.transpiler.layout import TranspileLayout
 
 from . import types
 from .data import Scope, Symbol
 from .exceptions import ConversionError, raise_from_node
-from .expression import ValueResolver, resolve_condition
+from .expression import ValueResolver, resolve_condition, is_physical
 
 
 _STDGATES = {
@@ -189,7 +191,18 @@ class ConvertVisitor(QASMVisitor[State]):
         """Convert a program node into a :class:`~qiskit.circuit.QuantumCircuit`.  If given,
         `source` is a string containing the OpenQASM 3 source code that was parsed into `node`.
         This is used to generated improved error messages."""
-        return self.visit(node, State(Scope.GLOBAL, source)).circuit
+
+        state = self.visit(node, State(Scope.GLOBAL, source))
+        symbols = state.symbol_table
+        if any(is_physical(name) for name in symbols.keys()):
+            names = list(filter(is_physical, symbols.keys()))
+            qr = QuantumRegister(len(names), 'qr')
+            intlist = [int(name[1:]) for name in names]
+            initial_layout = Layout.from_intlist(intlist, qr)
+            input_qubit_mapping = {q: i for q,i in zip(qr, intlist)}
+            layout = TranspileLayout(initial_layout, input_qubit_mapping)
+            state.circuit._layout = layout
+        return state.circuit
 
     def _raise_previously_defined(self, new: Symbol, old: Symbol, node: ast.QASMNode) -> NoReturn:
         message = f"'{new.name}' is already defined."
@@ -265,7 +278,7 @@ class ConvertVisitor(QASMVisitor[State]):
         context.circuit._parameter_table[parameter] = ParameterReferences(())
 
     def _resolve_generic(self, node: ast.Expression, context: State) -> Tuple[Any, types.Type]:
-        return ValueResolver(context.symbol_table).resolve(node)
+        return ValueResolver(context.symbol_table).resolve(node, context)
 
     def _resolve_constant_int(self, node: ast.Expression, context: State) -> int:
         value, type = self._resolve_generic(node, context)
@@ -312,7 +325,7 @@ class ConvertVisitor(QASMVisitor[State]):
     def _resolve_condition(
         self, node: ast.Expression, context: State
     ) -> Union[Tuple[ClassicalRegister, int], Tuple[Clbit, bool]]:
-        lhs, rhs = resolve_condition(node, context.symbol_table)
+        lhs, rhs = resolve_condition(node, context)
         if not isinstance(lhs, (Clbit, ClassicalRegister)):
             name = context.unique_name()
             lhs = ClassicalRegister(name=_escape_qasm2(name), bits=lhs)
