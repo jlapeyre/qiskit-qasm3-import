@@ -103,22 +103,22 @@ class ValueResolver(QASMVisitor):
             symbol = self.symbols[name]
         return symbol.data, symbol.type
 
-    def visit_IntegerLiteral(self, node: ast.IntegerLiteral, context=None):
+    def visit_IntegerLiteral(self, node: ast.IntegerLiteral, _context=None):
         return node.value, types.Int(const=True)
 
-    def visit_FloatLiteral(self, node: ast.FloatLiteral, context=None):
+    def visit_FloatLiteral(self, node: ast.FloatLiteral, _context=None):
         return node.value, types.Float(const=True)
 
-    def visit_BooleanLiteral(self, node: ast.BooleanLiteral, context=None):
+    def visit_BooleanLiteral(self, node: ast.BooleanLiteral, _context=None):
         return node.value, types.Bool(const=True)
 
-    def visit_BitstringLiteral(self, node: ast.BitstringLiteral, context=None):
+    def visit_BitstringLiteral(self, node: ast.BitstringLiteral, _context=None):
         return node.value, types.Uint(const=True, size=node.width)
 
-    def visit_DurationLiteral(self, node: ast.DurationLiteral, context=None):
+    def visit_DurationLiteral(self, node: ast.DurationLiteral, _context=None):
         return (node.value, node.unit.name), types.Duration(const=True)
 
-    def visit_DiscreteSet(self, node: ast.DiscreteSet, context=None):
+    def visit_DiscreteSet(self, node: ast.DiscreteSet, _context=None):
         if not node.values:
             return (), types.Sequence(types.Never())
         set_type: _IntegerT = types.Never()
@@ -133,7 +133,7 @@ class ValueResolver(QASMVisitor):
             values.append(expr_value)
         return tuple(values), types.Sequence(set_type)
 
-    def visit_RangeDefinition(self, node: ast.RangeDefinition, context=None):
+    def visit_RangeDefinition(self, node: ast.RangeDefinition, _context=None):
         start, start_type = (None, types.Never()) if node.start is None else self.visit(node.start)
         end, end_type = (None, types.Never()) if node.end is None else self.visit(node.end)
         step, step_type = (None, types.Never()) if node.step is None else self.visit(node.step)
@@ -149,7 +149,7 @@ class ValueResolver(QASMVisitor):
             end = end + 1 if positive else end - 1
         return slice(start, end, step), types.Range(range_type)
 
-    def visit_Concatenation(self, node: ast.Concatenation, context=None):
+    def visit_Concatenation(self, node: ast.Concatenation, _context=None):
         lhs_value, lhs_type = self.visit(node.lhs)
         rhs_value, rhs_type = self.visit(node.rhs)
         if not (
@@ -162,7 +162,7 @@ class ValueResolver(QASMVisitor):
         out_value = tuple(lhs_value) + tuple(rhs_value)
         return out_value, type(lhs_type)(len(out_value))
 
-    def visit_UnaryExpression(self, node: ast.UnaryExpression, context=None):
+    def visit_UnaryExpression(self, node: ast.UnaryExpression, _context=None):
         # In all this, we're only supporting things that we can actually output; `~` for example is
         # supported on `Bit` and `BitArray`, but Qiskit doesn't have any representation of the
         # literals for those or the actual operation on `Clbit` / `ClassicalRegister`, so we can
@@ -177,7 +177,7 @@ class ValueResolver(QASMVisitor):
             return (-value), type
         raise_from_node(node, f"unhandled unary operator '{node.op.name}'")
 
-    def visit_BinaryExpression(self, node: ast.BinaryExpression, context=None):
+    def visit_BinaryExpression(self, node: ast.BinaryExpression, _context=None):
         if node.op.name not in ("+", "-", "*", "/"):
             raise_from_node(node, f"unsupported binary operation '{node.op.name}'")
         lhs_value, lhs_type = self.visit(node.lhs)
@@ -293,10 +293,10 @@ class ValueResolver(QASMVisitor):
             return value, (types.Bit() if isinstance(value, Clbit) else types.Qubit())
         raise_from_node(base, f"unsupported index type: '{index_type.pretty()}'")
 
-    def visit_IndexExpression(self, node: ast.IndexExpression, context=None):
+    def visit_IndexExpression(self, node: ast.IndexExpression, _context=None):
         return self._index_collection(*self.visit(node.collection), node.index, node)
 
-    def visit_IndexedIdentifier(self, node: ast.IndexedIdentifier, context=None):
+    def visit_IndexedIdentifier(self, node: ast.IndexedIdentifier, _context=None):
         collection, collection_type = self.visit(node.name)
         for index in node.indices:
             collection, collection_type = self._index_collection(
