@@ -199,7 +199,7 @@ class ConvertVisitor(QASMVisitor[State]):
             qr = QuantumRegister(len(names), "qr")
             intlist = [int(name[1:]) for name in names]
             initial_layout = Layout.from_intlist(intlist, qr)
-            input_qubit_mapping = {q: i for q, i in zip(qr, intlist)}
+            input_qubit_mapping = dict(zip(qr, intlist))
             layout = TranspileLayout(initial_layout, input_qubit_mapping)
             state.circuit._layout = layout
         return state.circuit
