@@ -185,7 +185,7 @@ class ConvertVisitor(QASMVisitor[State]):
     # In some places, such as symbol definitions, we do some simple checks to help everyone's
     # sanity, as the reference package doesn't yet do this.
 
-    # pylint: disable=missing-function-docstring,no-self-use,unused-argument
+    # pylint: disable=missing-function-docstring,no-self-use,unused-argument,protected-access
 
     def convert(self, node: ast.Program, *, source: Optional[str] = None) -> QuantumCircuit:
         """Convert a program node into a :class:`~qiskit.circuit.QuantumCircuit`.  If given,
