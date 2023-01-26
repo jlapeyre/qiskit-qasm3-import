@@ -34,6 +34,17 @@ _IntegerT = Union[types.Never, types.Int, types.Uint]
 _PHYSICAL_QUBIT_RE = re.compile(r"\$\d+")
 
 
+def is_physical(name: str):
+    "Return true if name is a valid identifier for a physical qubit."
+    return re.match(_PHYSICAL_QUBIT_RE, name) is not None
+
+
+# Qiskit represents physical qubits in a layout by integers.
+def physical_qubit_identifiers_to_ints(names):
+    """Convert an iterable of identifiers of physical qubits to a list of corresponding `int`s."""
+    return [int(name[1:]) for name in names]
+
+
 def join_integer_types(left: _IntegerT, right: _IntegerT) -> _IntegerT:
     if isinstance(left, types.Never):
         return right
@@ -48,11 +59,6 @@ def join_integer_types(left: _IntegerT, right: _IntegerT) -> _IntegerT:
     if isinstance(left, types.Uint) and isinstance(right, types.Uint):
         return types.Uint(const, size)
     return types.Int(const, size)
-
-
-def is_physical(name: str):
-    "Return true if name is a valid identifier for a physical qubit."
-    return re.match(_PHYSICAL_QUBIT_RE, name) is not None
 
 
 class ValueResolver(QASMVisitor):

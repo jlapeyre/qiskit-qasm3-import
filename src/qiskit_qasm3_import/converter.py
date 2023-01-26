@@ -32,7 +32,12 @@ from qiskit.transpiler.layout import TranspileLayout
 from . import types
 from .data import Scope, Symbol, AddressingMode
 from .exceptions import ConversionError, raise_from_node
-from .expression import ValueResolver, resolve_condition, is_physical
+from .expression import (
+    ValueResolver,
+    resolve_condition,
+    is_physical,
+    physical_qubit_identifiers_to_ints,
+)
 
 
 _STDGATES = {
@@ -196,9 +201,9 @@ class ConvertVisitor(QASMVisitor[State]):
         state = self.visit(node, State(Scope.GLOBAL, source))
         symbols = state.symbol_table
         if any(is_physical(name) for name in symbols.keys()):
-            names = list(filter(is_physical, symbols.keys()))
-            qr = QuantumRegister(len(names), "qr")
-            intlist = [int(name[1:]) for name in names]
+            names = filter(is_physical, symbols.keys())
+            intlist = physical_qubit_identifiers_to_ints(names)
+            qr = QuantumRegister(len(intlist), "qr")
             initial_layout = Layout.from_intlist(intlist, qr)
             input_qubit_mapping = dict(zip(qr, intlist))
             layout = TranspileLayout(initial_layout, input_qubit_mapping)
