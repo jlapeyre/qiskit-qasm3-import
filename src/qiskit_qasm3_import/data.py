@@ -21,6 +21,18 @@ class Scope(enum.Enum):
     NONE = enum.auto()
 
 
+class AddressingMode(enum.Enum):
+    """Addressing mode for qubits in OpenQASM 3 programs.
+
+    This class is useful as long as we allow only physical or virtual addressing modes, but
+    not mixed. If the latter is supported in the future, this class will be modified or removed.
+    """
+
+    UNKNOWN = enum.auto()
+    PHYSICAL = enum.auto()
+    VIRTUAL = enum.auto()
+
+
 class Symbol:
     """An internal symbol used during parsing."""
 

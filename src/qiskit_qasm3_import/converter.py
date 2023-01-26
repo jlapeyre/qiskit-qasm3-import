@@ -30,7 +30,7 @@ from qiskit.transpiler import Layout
 from qiskit.transpiler.layout import TranspileLayout
 
 from . import types
-from .data import Scope, Symbol
+from .data import Scope, Symbol, AddressingMode
 from .exceptions import ConversionError, raise_from_node
 from .expression import ValueResolver, resolve_condition, is_physical
 
@@ -99,7 +99,7 @@ class State:
         self.circuit = QuantumCircuit()
         self.symbol_table = _BUILTINS.copy()
         self._unique = (f"_{x}" for x in itertools.count())
-        self.addressing_mode = None
+        self.addressing_mode = AddressingMode.UNKNOWN
 
     def gate_scope(self):
         """Get a new state for entry to a "gate" scope."""
@@ -353,12 +353,12 @@ class ConvertVisitor(QASMVisitor[State]):
         return context
 
     def visit_QubitDeclaration(self, node: ast.QubitDeclaration, context: State) -> State:
-        if context.addressing_mode == "physical":
+        if context.addressing_mode == AddressingMode.PHYSICAL:
             raise_from_node(
                 node,
                 "Virtual qubit declared in physical addressing mode. Mixing modes not currently supported.",
             )
-        context.addressing_mode = "virtual"
+        context.addressing_mode = AddressingMode.VIRTUAL
         name = node.qubit.name
         if node.size is None:
             bit = Qubit()

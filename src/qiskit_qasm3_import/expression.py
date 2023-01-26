@@ -26,7 +26,7 @@ from qiskit.circuit import Clbit, Qubit
 
 from . import types
 from .exceptions import raise_from_node
-from .data import Symbol, Scope
+from .data import Symbol, Scope, AddressingMode
 
 
 _IntegerT = Union[types.Never, types.Int, types.Uint]
@@ -93,12 +93,12 @@ class ValueResolver(QASMVisitor):
         name = node.name
         if name not in self.symbols:
             if is_physical(name):  # Physical qubits are not declared.
-                if context.addressing_mode == "virtual":
+                if context.addressing_mode == AddressingMode.VIRTUAL:
                     raise_from_node(
                         node,
                         "Physical qubit referenced in virtual addressing mode. Mixing modes not currently supported.",
                     )
-                context.addressing_mode = "physical"
+                context.addressing_mode = AddressingMode.PHYSICAL
                 bit = Qubit()
                 symbol = Symbol(name, bit, types.Qubit(), Scope.GLOBAL, node)
                 context.circuit.add_bits([bit])
