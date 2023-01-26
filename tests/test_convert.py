@@ -139,8 +139,6 @@ out[2] = measure $2;
     parse(source)
 
 
-
-
 def test_include_rejects_non_stdgates():
     source = "include 'unknown.qasm';"
     with pytest.raises(ConversionError, match="non-stdgates imports not currently supported"):
@@ -928,3 +926,28 @@ def test_alias_rejects_bad_types():
     """
     with pytest.raises(ConversionError, match="aliases must be of registers"):
         parse(source)
+
+
+def test_reject_mixed_addressing_mode():
+    source1 = """
+    qubit q1;
+    reset $0;
+    """
+    with pytest.raises(
+        ConversionError, match="Physical qubit referenced in virtual addressing mode"
+    ):
+        parse(source1)
+
+    source2 = """
+    reset $0;
+    qubit q1;
+    """
+    with pytest.raises(ConversionError, match="Virtual qubit declared in physical addressing mode"):
+        parse(source2)
+
+    source3 = """
+    reset $0;
+    qubit[3] q;
+    """
+    with pytest.raises(ConversionError, match="Virtual qubit declared in physical addressing mode"):
+        parse(source3)

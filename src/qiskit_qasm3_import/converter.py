@@ -91,7 +91,7 @@ _BUILTINS = {
 
 
 class State:
-    __slots__ = ("scope", "source", "circuit", "symbol_table", "_unique")
+    __slots__ = ("scope", "source", "circuit", "symbol_table", "_unique", "addressing_mode")
 
     def __init__(self, scope: Scope, source: Optional[str] = None):
         self.scope = scope
@@ -99,6 +99,7 @@ class State:
         self.circuit = QuantumCircuit()
         self.symbol_table = _BUILTINS.copy()
         self._unique = (f"_{x}" for x in itertools.count())
+        self.addressing_mode = None
 
     def gate_scope(self):
         """Get a new state for entry to a "gate" scope."""
@@ -352,6 +353,12 @@ class ConvertVisitor(QASMVisitor[State]):
         return context
 
     def visit_QubitDeclaration(self, node: ast.QubitDeclaration, context: State) -> State:
+        if context.addressing_mode == "physical":
+            raise_from_node(
+                node,
+                "Virtual qubit declared in physical addressing mode. Mixing modes not currently supported.",
+            )
+        context.addressing_mode = "virtual"
         name = node.qubit.name
         if node.size is None:
             bit = Qubit()
