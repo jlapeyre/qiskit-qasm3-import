@@ -206,8 +206,7 @@ class ConvertVisitor(QASMVisitor[State]):
             qr = QuantumRegister(len(intlist), "qr")
             initial_layout = Layout.from_intlist(intlist, qr)
             input_qubit_mapping = dict(zip(qr, intlist))
-            layout = TranspileLayout(initial_layout, input_qubit_mapping)
-            state.circuit._layout = layout
+            state.circuit._layout = TranspileLayout(initial_layout, input_qubit_mapping)
         return state.circuit
 
     def _raise_previously_defined(self, new: Symbol, old: Symbol, node: ast.QASMNode) -> NoReturn:
